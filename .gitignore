@@ -16,4 +16,4 @@ build/
 dist/
 *.egg-info/
 .DS_Store
-SkillGym/out/
+out/

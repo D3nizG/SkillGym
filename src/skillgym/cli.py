@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Continuous skill improvement MVP CLI",
     )
-    default_root = Path(__file__).resolve().parent.parent
+    default_root = Path(__file__).resolve().parents[2]
     parser.add_argument(
         "--skill-path",
         required=True,

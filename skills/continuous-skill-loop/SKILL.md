@@ -9,7 +9,7 @@ Use this skill to run the Harbor + TruLens driven loop that benchmarks a coding 
 
 ## Setup
 ```bash
-cd /Users/Thomas_1/Documents/Playground/SkillGym
+cd /Users/Thomas_1/Documents/Playground
 python -m pip install -e .
 ```
 
