@@ -65,7 +65,7 @@ python -m pip install -e .
 cp .env.example .env
 ```
 
-For local demo runs, `OPENAI_API_KEY` is optional (SkillGym will use heuristic GPA scoring).
+For local demo runs, `OPENAI_API_KEY` is optional (SkillGym may use fallback scoring/generation).
 
 ### 3) Run the reproducible Docker E2E demo
 
@@ -85,6 +85,34 @@ This command:
 - Decision: `out/e2e-skillbench/reports/promotion_decision.json`
 - Candidate skill: `out/e2e-skillbench/generated_skills/`
 
+## Real integrations (no mocks/fallbacks)
+
+SkillGym now supports strict real mode for Harbor/SkillBench + TruLens.
+
+Prerequisites:
+
+- Harbor CLI installed (`uv tool install harbor`)
+- `OPENAI_API_KEY` set
+- local SkillBench checkout (for `tasks/`) or any Harbor task/dataset path
+
+Run with SkillBench tasks through Harbor:
+
+```bash
+./scripts/run_real_skillbench_e2e.sh /absolute/path/to/skillsbench/tasks
+```
+
+Run with a Harbor task/dataset path:
+
+```bash
+./scripts/run_real_harbor_e2e.sh /absolute/path/to/harbor/tasks-or-dataset
+```
+
+Both scripts use `--strict-real`, which means:
+
+- no simulator fallback
+- no heuristic TruLens fallback
+- no heuristic Upskill fallback
+
 ## Run SkillGym on your own skill
 
 Replace `--skill-path` with your own `SKILL.md`:
@@ -99,12 +127,17 @@ skillgym \
   --output-dir out/my-run
 ```
 
-## Use real SkillBench / Harbor containers
+## Use real SkillBench / Harbor
 
 - SkillBench project: [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
+- Harbor docs: [harborframework.com/docs](https://harborframework.com/docs)
 - Set container images in `.env`:
   - `SKILLBENCH_DOCKER_IMAGE=...`
   - `HARBOR_DOCKER_IMAGE=...`
+- Or use Harbor CLI/task-path mode:
+  - `SKILLBENCH_CMD=harbor`
+  - `SKILLBENCH_TASKS_PATH=/path/to/skillsbench/tasks`
+  - `HARBOR_CMD=harbor`
 - SkillBench contract details: `integrations/skillbench/README.md`
 
 ## Architecture (quick map)

@@ -18,6 +18,7 @@ python3 "${ROOT_DIR}/src/cli.py" \
   --skill-path "${ROOT_DIR}/skills/e2e-poor-skill/SKILL.md" \
   --optimizer upskill \
   --seed e2e \
+  --env-file "${ROOT_DIR}/.env" \
   --output-dir "${ROOT_DIR}/out/e2e-skillbench"
 
 echo "[3/3] Done"

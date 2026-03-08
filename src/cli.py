@@ -86,6 +86,19 @@ def parse_args() -> argparse.Namespace:
         help="Directory for run artifacts",
     )
     parser.add_argument(
+        "--strict-real",
+        action="store_true",
+        help="Disable simulation/fallback paths and require real Harbor/SkillBench + TruLens integrations.",
+    )
+    parser.add_argument(
+        "--harbor-path",
+        help="Path to a local Harbor task or dataset directory (used with --harness harbor).",
+    )
+    parser.add_argument(
+        "--skillbench-path",
+        help="Path to local SkillBench tasks directory (used with --harness skillbench via Harbor).",
+    )
+    parser.add_argument(
         "--env-file",
         help="Path to the .env file containing Harbor/OpenAI/GEPA secrets (defaults to .env in repo root).",
     )
@@ -96,9 +109,14 @@ def build_runtime_config(args: argparse.Namespace) -> Dict[str, Any]:
     config: Dict[str, Any] = {
         "task_limit": args.task_limit,
         "seed": args.seed,
+        "strict_real": bool(args.strict_real),
     }
     if args.task_subset:
         config["task_subset"] = args.task_subset
+    if args.harbor_path:
+        config["dataset_path"] = str(Path(args.harbor_path).expanduser().resolve())
+    if args.skillbench_path:
+        config["dataset_path"] = str(Path(args.skillbench_path).expanduser().resolve())
     return config
 
 
@@ -114,8 +132,15 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     env_path = Path(args.env_file).expanduser().resolve() if args.env_file else None
     settings = load_settings(env_path)
+    strict_real = bool(args.strict_real or settings.strict_real)
     dataset_id = args.dataset_id or (
         "sample-skillbench" if args.harness == "skillbench" else "sample-harbor"
+    )
+    harbor_path = Path(args.harbor_path).expanduser().resolve() if args.harbor_path else None
+    skillbench_path = (
+        Path(args.skillbench_path).expanduser().resolve()
+        if args.skillbench_path
+        else settings.skillbench.tasks_path
     )
 
     repository = InMemoryRepository()
@@ -129,6 +154,9 @@ def main() -> None:
             workspace_mount=settings.skillbench.workspace_mount,
             results_mount=settings.skillbench.results_mount,
             extra_env=settings.skillbench.extra_env,
+            command=settings.skillbench.command,
+            tasks_path=skillbench_path,
+            strict_real=strict_real,
         )
     else:
         benchmark_runner = HarborRunner(
@@ -140,6 +168,9 @@ def main() -> None:
             workspace_mount=settings.harbor.workspace_mount,
             results_mount=settings.harbor.results_mount,
             extra_env=settings.harbor.extra_env,
+            command=settings.harbor.command,
+            strict_real=strict_real,
+            dataset_path=harbor_path,
         )
     loop = SkillImprovementLoop(
         repository=repository,
@@ -149,20 +180,26 @@ def main() -> None:
             judge_model=settings.trulens.judge_model,
             api_key=settings.trulens.openai_api_key,
             instructions=settings.trulens.judge_instructions,
+            strict_mode=bool(strict_real or settings.trulens.strict),
         ),
         promotion_decider=PromotionDecider(),
         gepa_settings=settings.gepa,
+        upskill_settings=settings.upskill,
     )
+
+    runtime_config = build_runtime_config(args)
+    runtime_config["strict_real"] = strict_real
 
     config = LoopConfig(
         dataset_id=dataset_id,
         agent_id=args.agent_id,
         model_id=args.model_id,
-        runtime_config=build_runtime_config(args),
+        runtime_config=runtime_config,
         optimizer_name=args.optimizer,
         skill_path=skill_path,
         skill_name=skill_name,
         output_dir=output_dir,
+        strict_real=strict_real,
     )
     result = loop.run(config)
     print("Baseline summary:")

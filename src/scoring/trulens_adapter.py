@@ -23,8 +23,10 @@ class TruLensGPAEvaluator:
         judge_model: str = "gpt-4o-mini",
         api_key: str | None = None,
         instructions: str | None = None,
+        strict_mode: bool = False,
     ) -> None:
         self.judge_model = judge_model
+        self.strict_mode = strict_mode
         self.instructions = instructions or (
             "Score the agent on goal fulfillment, planning, adherence, efficiency, and consistency. "
             "Return clear rationales."
@@ -36,8 +38,17 @@ class TruLensGPAEvaluator:
             try:
                 self._provider = OpenAI(model_engine=self.judge_model)
             except Exception as exc:  # pragma: no cover - network dependency
+                if self.strict_mode:
+                    raise RuntimeError(
+                        f"Failed to initialize TruLens provider in strict mode: {exc}"
+                    ) from exc
                 LOGGER.warning("Failed to initialize TruLens OpenAI provider: %s", exc)
                 self._provider = None
+        elif self.strict_mode:
+            raise RuntimeError(
+                "Strict mode requires TruLens OpenAI provider. Set OPENAI_API_KEY and ensure "
+                "trulens-providers-openai is installed."
+            )
 
     def score_trace(
         self,
@@ -45,10 +56,18 @@ class TruLensGPAEvaluator:
         task_spec: Dict,
     ) -> GPAScore:
         if self._provider is None:
+            if self.strict_mode:
+                raise RuntimeError(
+                    "Strict mode enabled but TruLens provider is unavailable."
+                )
             return self._fallback(normalized_trace, task_spec)
         try:
             return self._score_with_trulens(normalized_trace, task_spec)
         except Exception as exc:  # pragma: no cover - network dependency
+            if self.strict_mode:
+                raise RuntimeError(
+                    f"Strict mode disallows TruLens fallback; scoring failed: {exc}"
+                ) from exc
             LOGGER.warning("TruLens evaluation failed (%s); using fallback.", exc)
             return self._fallback(normalized_trace, task_spec)
 

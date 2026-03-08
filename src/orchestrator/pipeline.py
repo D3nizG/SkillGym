@@ -21,7 +21,7 @@ from promotion.decider import PromotionDecider
 from scoring.trulens_adapter import TruLensGPAEvaluator
 from storage.repository import InMemoryRepository
 from utils.io import write_json, write_jsonl
-from settings import GepaSettings
+from settings import GepaSettings, UpskillSettings
 
 
 @dataclass
@@ -34,6 +34,7 @@ class LoopConfig:
     skill_path: Path
     skill_name: str
     output_dir: Path
+    strict_real: bool = False
 
 
 @dataclass
@@ -67,6 +68,7 @@ class SkillImprovementLoop:
         gpa_evaluator: TruLensGPAEvaluator,
         promotion_decider: PromotionDecider,
         gepa_settings: GepaSettings | None = None,
+        upskill_settings: UpskillSettings | None = None,
     ) -> None:
         self.repository = repository
         self.benchmark_runner = benchmark_runner
@@ -74,6 +76,7 @@ class SkillImprovementLoop:
         self.gpa_evaluator = gpa_evaluator
         self.promotion_decider = promotion_decider
         self.gepa_settings = gepa_settings
+        self.upskill_settings = upskill_settings
 
     # ------------------------------------------------------------------
     def run(self, config: LoopConfig) -> Dict[str, Any]:
@@ -84,7 +87,10 @@ class SkillImprovementLoop:
         )
         baseline_artifacts = self._execute_run(config, baseline_version)
 
-        optimizer = self._build_optimizer(config.optimizer_name)
+        optimizer = self._build_optimizer(
+            config.optimizer_name,
+            strict_mode=config.strict_real,
+        )
         context = self._build_context(baseline_version, baseline_artifacts)
         candidates = optimizer.propose_candidates(baseline_version.content, context)
         if not candidates:
@@ -231,16 +237,21 @@ class SkillImprovementLoop:
             failure_taxonomy=artifacts.failure_taxonomy,
         )
 
-    def _build_optimizer(self, name: str):
+    def _build_optimizer(self, name: str, strict_mode: bool = False):
         normalized = name.lower()
         if normalized == "upskill":
-            return UpskillOptimizer()
+            settings = self.upskill_settings
+            return UpskillOptimizer(
+                api_key=settings.openai_api_key if settings else None,
+                model=settings.model if settings else "gpt-4o-mini",
+                strict_mode=strict_mode,
+            )
         if normalized == "gepa":
             if not self.gepa_settings:
                 raise ValueError(
                     "GEPA settings missing. Provide GEPA_* variables in your .env file."
                 )
-            return GEPAOptimizer(settings=self.gepa_settings)
+            return GEPAOptimizer(settings=self.gepa_settings, strict_mode=strict_mode)
         raise ValueError(f"Unsupported optimizer '{name}'.")
 
     def _register_skill(

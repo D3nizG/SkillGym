@@ -19,8 +19,9 @@ class GepaCandidate:
 class GEPAOptimizer:
     """GEPA-backed optimizer that uses `optimize_anything` with Harbor telemetry."""
 
-    def __init__(self, settings: GepaSettings) -> None:
+    def __init__(self, settings: GepaSettings, strict_mode: bool = False) -> None:
         self.settings = settings
+        self.strict_mode = strict_mode
 
     def propose_candidates(
         self,
@@ -64,6 +65,8 @@ class GEPAOptimizer:
                 )
             ]
         except Exception as exc:
+            if self.strict_mode:
+                raise RuntimeError(f"GEPA optimization failed in strict mode: {exc}") from exc
             # Fall back to returning the original skill with diagnostic footer.
             fallback = skill_text.rstrip() + "\n\n<!-- GEPA failed: " + str(exc) + " -->"
             return [

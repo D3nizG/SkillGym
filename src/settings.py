@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 @dataclass
 class HarborSettings:
     docker_image: Optional[str]
+    command: str = "harbor"
     docker_command: str = "docker"
     workspace_mount: str = "/workspace"
     results_mount: str = "/harbor/artifacts"
@@ -24,6 +25,8 @@ class HarborSettings:
 @dataclass
 class SkillBenchSettings:
     docker_image: Optional[str]
+    command: str = "harbor"
+    tasks_path: Optional[Path] = None
     docker_command: str = "docker"
     workspace_mount: str = "/workspace"
     results_mount: str = "/skillbench/artifacts"
@@ -39,6 +42,13 @@ class TruLensSettings:
     openai_api_key: Optional[str]
     judge_model: str = "gpt-4o-mini"
     judge_instructions: str | None = None
+    strict: bool = False
+
+
+@dataclass
+class UpskillSettings:
+    openai_api_key: Optional[str]
+    model: str = "gpt-4o-mini"
 
 
 @dataclass
@@ -56,7 +66,9 @@ class SkillGymSettings:
     harbor: HarborSettings
     skillbench: SkillBenchSettings
     trulens: TruLensSettings
+    upskill: UpskillSettings
     gepa: GepaSettings
+    strict_real: bool = False
 
 
 def _parse_extra_env(raw: str | None) -> Dict[str, str]:
@@ -72,6 +84,12 @@ def _parse_extra_env(raw: str | None) -> Dict[str, str]:
     return entries
 
 
+def _parse_bool(raw: str | None, default: bool = False) -> bool:
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_settings(env_file: Path | None = None) -> SkillGymSettings:
     load_kwargs = {"override": False}
     if env_file is not None:
@@ -80,6 +98,7 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
 
     harbor = HarborSettings(
         docker_image=os.getenv("HARBOR_DOCKER_IMAGE"),
+        command=os.getenv("HARBOR_CMD", "harbor"),
         docker_command=os.getenv("HARBOR_DOCKER_CMD", "docker"),
         workspace_mount=os.getenv("HARBOR_WORKSPACE_MOUNT", "/workspace"),
         results_mount=os.getenv("HARBOR_RESULTS_MOUNT", "/harbor/artifacts"),
@@ -87,6 +106,12 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
     )
     skillbench = SkillBenchSettings(
         docker_image=os.getenv("SKILLBENCH_DOCKER_IMAGE"),
+        command=os.getenv("SKILLBENCH_CMD", "harbor"),
+        tasks_path=(
+            Path(os.getenv("SKILLBENCH_TASKS_PATH")).expanduser().resolve()
+            if os.getenv("SKILLBENCH_TASKS_PATH")
+            else None
+        ),
         docker_command=os.getenv("SKILLBENCH_DOCKER_CMD", "docker"),
         workspace_mount=os.getenv("SKILLBENCH_WORKSPACE_MOUNT", "/workspace"),
         results_mount=os.getenv("SKILLBENCH_RESULTS_MOUNT", "/skillbench/artifacts"),
@@ -96,6 +121,11 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         judge_model=os.getenv("TRULENS_JUDGE_MODEL", "gpt-4o-mini"),
         judge_instructions=os.getenv("TRULENS_JUDGE_INSTRUCTIONS"),
+        strict=_parse_bool(os.getenv("TRULENS_STRICT"), default=False),
+    )
+    upskill = UpskillSettings(
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        model=os.getenv("UPSKILL_MODEL", "gpt-4o-mini"),
     )
     gepa = GepaSettings(
         reflection_model=os.getenv("GEPA_REFLECTION_MODEL", "openai/gpt-4o-mini"),
@@ -112,5 +142,7 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
         harbor=harbor,
         skillbench=skillbench,
         trulens=trulens,
+        upskill=upskill,
         gepa=gepa,
+        strict_real=_parse_bool(os.getenv("SKILLGYM_STRICT_REAL"), default=False),
     )

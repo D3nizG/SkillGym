@@ -6,7 +6,27 @@ Official SkillBench project: [benchflow-ai/skillsbench](https://github.com/bench
 
 ## How SkillGym invokes SkillBench
 
-When `--harness skillbench` is set, SkillGym executes a Docker command equivalent to:
+When `--harness skillbench` is set, SkillGym supports two real modes:
+
+1) Harbor-backed SkillBench tasks (`SKILLBENCH_TASKS_PATH` or `--skillbench-path`)
+2) Docker contract mode (`SKILLBENCH_DOCKER_IMAGE`)
+
+### Mode 1: Harbor-backed SkillBench tasks (recommended)
+
+SkillGym runs Harbor against your local SkillBench task directory:
+
+```bash
+harbor run \
+  --job-name <run_id> \
+  --jobs-dir <out/runs> \
+  -p <skillsbench/tasks/path> \
+  -a <agent_id> \
+  -m <model_id>
+```
+
+### Mode 2: Docker contract mode (legacy)
+
+SkillGym executes a Docker command equivalent to:
 
 ```bash
 skillbench run \

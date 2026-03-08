@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SkillBenchRunner:
-    """Run SkillBench in Docker; fall back to local simulation for quick checks."""
+    """Run SkillBench either through Harbor tasks path, Docker contract, or simulation."""
 
     def __init__(
         self,
@@ -27,6 +27,9 @@ class SkillBenchRunner:
         workspace_mount: str = "/workspace",
         results_mount: str = "/skillbench/artifacts",
         extra_env: Dict[str, str] | None = None,
+        command: str = "harbor",
+        tasks_path: Path | None = None,
+        strict_real: bool = False,
     ) -> None:
         self.dataset_registry = dataset_registry
         self.artifacts_root = artifacts_root
@@ -36,7 +39,12 @@ class SkillBenchRunner:
         self.workspace_mount = workspace_mount.rstrip("/")
         self.results_mount = results_mount.rstrip("/")
         self.extra_env = extra_env or {}
+        self.command = command
+        self.tasks_path = tasks_path
+        self.strict_real = strict_real
         ensure_dir(self.artifacts_root)
+
+        # Legacy simulation fallback for quick local checks.
         self._simulation_runner = HarborRunner(
             dataset_registry=dataset_registry,
             artifacts_root=artifacts_root,
@@ -46,6 +54,24 @@ class SkillBenchRunner:
             workspace_mount=workspace_mount,
             results_mount=results_mount,
             extra_env=extra_env,
+            command=command,
+            strict_real=False,
+            dataset_path=None,
+        )
+
+        # Real SkillBench integration path: run Harbor against SkillsBench task directories.
+        self._harbor_bridge = HarborRunner(
+            dataset_registry=dataset_registry,
+            artifacts_root=artifacts_root,
+            workspace_root=workspace_root,
+            docker_image=None,
+            docker_command=docker_command,
+            workspace_mount=workspace_mount,
+            results_mount=results_mount,
+            extra_env=extra_env,
+            command=command,
+            strict_real=strict_real,
+            dataset_path=tasks_path,
         )
 
     def run_benchmark(
@@ -57,43 +83,61 @@ class SkillBenchRunner:
         skill_file: Path,
         runtime_config: Dict[str, Any],
     ) -> Tuple[BenchmarkRun, List[TaskRun]]:
-        if not self.docker_image:
-            # Reuse deterministic simulation runner to keep local development fast.
-            return self._simulation_runner.run_benchmark(
+        if self.tasks_path is not None:
+            bridge_config = dict(runtime_config)
+            bridge_config["dataset_path"] = str(self.tasks_path)
+            bridge_config["strict_real"] = self.strict_real
+            return self._harbor_bridge.run_benchmark(
                 dataset_id=dataset_id,
                 agent_id=agent_id,
                 model_id=model_id,
                 skill_version=skill_version,
                 skill_file=skill_file,
-                runtime_config=runtime_config,
+                runtime_config=bridge_config,
             )
 
-        run_id = runtime_config.get("run_id") or f"skillbench_{uuid.uuid4().hex[:8]}"
-        artifacts_dir = ensure_dir(self.artifacts_root / run_id)
-        run = BenchmarkRun(
-            id=run_id,
+        if self.docker_image:
+            run_id = runtime_config.get("run_id") or f"skillbench_{uuid.uuid4().hex[:8]}"
+            artifacts_dir = ensure_dir(self.artifacts_root / run_id)
+            run = BenchmarkRun(
+                id=run_id,
+                dataset_id=dataset_id,
+                agent_id=agent_id,
+                model_id=model_id,
+                skill_version_id=skill_version.id,
+                started_at=datetime.utcnow(),
+                completed_at=None,
+                runtime_config=runtime_config,
+                status="running",
+                artifacts_dir=artifacts_dir,
+            )
+            task_runs = self._run_skillbench_docker(
+                dataset_id=dataset_id,
+                agent_id=agent_id,
+                model_id=model_id,
+                skill_file=skill_file,
+                runtime_config=runtime_config,
+                artifacts_dir=artifacts_dir,
+                run_id=run_id,
+            )
+            run.completed_at = datetime.utcnow()
+            run.status = "completed"
+            return run, task_runs
+
+        if self.strict_real:
+            raise RuntimeError(
+                "Strict mode requires SKILLBENCH_TASKS_PATH (real Harbor-backed SkillBench) "
+                "or SKILLBENCH_DOCKER_IMAGE (contract mode)."
+            )
+
+        return self._simulation_runner.run_benchmark(
             dataset_id=dataset_id,
             agent_id=agent_id,
             model_id=model_id,
-            skill_version_id=skill_version.id,
-            started_at=datetime.utcnow(),
-            completed_at=None,
-            runtime_config=runtime_config,
-            status="running",
-            artifacts_dir=artifacts_dir,
-        )
-        task_runs = self._run_skillbench_docker(
-            dataset_id=dataset_id,
-            agent_id=agent_id,
-            model_id=model_id,
+            skill_version=skill_version,
             skill_file=skill_file,
             runtime_config=runtime_config,
-            artifacts_dir=artifacts_dir,
-            run_id=run_id,
         )
-        run.completed_at = datetime.utcnow()
-        run.status = "completed"
-        return run, task_runs
 
     def _run_skillbench_docker(
         self,
