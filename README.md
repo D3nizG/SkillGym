@@ -97,6 +97,29 @@ Use `skillgym --help` for all flags.
 4. SkillGym re-runs the same benchmark slice and compares baseline vs candidate.
 5. Keep the candidate only if promotion gates pass (`pass_rate`, catastrophic failures, GPA, token budget).
 
+## Reproducible Docker E2E demo
+
+This repo includes a deterministic SkillBench-compatible Docker harness for local demo runs.
+It works without `OPENAI_API_KEY` (SkillGym falls back to heuristic GPA scoring).
+
+Run:
+
+```bash
+./scripts/run_e2e_skillbench_demo.sh
+```
+
+What it does:
+
+1. Builds `integrations/skillbench/mock` as a local Docker image.
+2. Runs SkillGym on `skills/e2e-poor-skill/SKILL.md` with `--harness skillbench`.
+3. Generates a candidate skill via `upskill`, re-runs the benchmark, and writes a promotion report.
+
+Key demo assets:
+
+- Baseline weak skill: `skills/e2e-poor-skill/SKILL.md`
+- Demo dataset: `benchmarks/e2e_skillbench.json`
+- Docker harness implementation: `integrations/skillbench/mock/skillbench.py`
+
 ## Output artifacts
 
 Runs write to `out/`:

@@ -50,3 +50,13 @@ skillgym \
 ```
 
 If `SKILLBENCH_DOCKER_IMAGE` is not set, SkillGym reuses the local simulation runner with the SkillBench registry.
+
+## Docker demo harness in this repo
+
+For a fully reproducible local E2E demo, use the mock SkillBench harness:
+
+- `integrations/skillbench/mock/Dockerfile`
+- `integrations/skillbench/mock/skillbench.py`
+- `scripts/run_e2e_skillbench_demo.sh`
+
+This does not replace real SkillBench; it provides a deterministic containerized contract implementation so contributors can reproduce the optimization loop quickly.

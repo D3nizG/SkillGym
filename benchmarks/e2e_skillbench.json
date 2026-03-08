@@ -1,0 +1,31 @@
+{
+  "datasets": [
+    {
+      "id": "e2e-skillbench",
+      "description": "Small deterministic benchmark to demonstrate skill improvement via SkillGym + SkillBench.",
+      "tasks": [
+        {
+          "id": "e2e-plan-and-checklist",
+          "goal": "Produce a plan with verification checklist",
+          "difficulty": 0.52,
+          "context": "Task expects explicit planning and concrete verification checks.",
+          "success_template": "Produced plan and verification checklist"
+        },
+        {
+          "id": "e2e-format-contract",
+          "goal": "Return output that follows the exact format contract",
+          "difficulty": 0.61,
+          "context": "Task fails if output sections are missing or out of order.",
+          "success_template": "Returned contract-compliant output"
+        },
+        {
+          "id": "e2e-efficiency",
+          "goal": "Solve with minimal redundant actions",
+          "difficulty": 0.56,
+          "context": "Task rewards concise tool usage and penalizes repeated calls.",
+          "success_template": "Completed efficiently with minimal redundant actions"
+        }
+      ]
+    }
+  ]
+}
