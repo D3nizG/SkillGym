@@ -1,29 +1,59 @@
 # SkillGym
 
-SkillGym is a CLI that runs the full harness + TruLens + GEPA loop described in the system design doc. It supports both `harbor` and `skillbench` harnesses, uses the `trulens` OpenAI provider for GPA-style signals, and mutates SKILL.md text with the official `gepa` package.
+SkillGym is an MVP CLI for continuous improvement of agent skills (`SKILL.md`) using benchmark execution + trace quality scoring.
+
+## Core loop
+
+1. Run benchmark tasks with a harness (`harbor` or `skillbench`).
+2. Normalize traces and score behavior with TruLens GPA dimensions.
+3. Generate a candidate skill with an optimizer (`upskill` or `gepa`).
+4. Re-run the same benchmark slice and apply promotion gates.
+
+## Project structure
+
+- `src/cli.py` — CLI entrypoint and wiring.
+- `src/orchestrator/pipeline.py` — end-to-end baseline/candidate workflow.
+- `src/adapters/` — harness backends (`harbor.py`, `skillbench.py`).
+- `src/normalization/trace_normalizer.py` — raw trace -> normalized trace schema.
+- `src/scoring/trulens_adapter.py` — TruLens-based GPA scoring.
+- `src/optimization/` — optimizer adapters (`upskill_adapter.py`, `gepa_adapter.py`).
+- `src/promotion/decider.py` — promotion gate policy.
+- `src/storage/repository.py` — in-memory run/skill bookkeeping.
+- `benchmarks/` — sample dataset registries.
+- `integrations/skillbench/` — SkillBench interface contract and schema.
+- `skills/` — example skills used as baseline inputs.
+
+## Prerequisites
+
+- Python `>=3.11`
+- Docker (for real harness execution)
+- OpenAI API key (`OPENAI_API_KEY`)
+- At least one harness image:
+  - `HARBOR_DOCKER_IMAGE`, or
+  - `SKILLBENCH_DOCKER_IMAGE`
 
 ## Setup
-1. Copy `.env.example` to `.env` and fill in:
-   - `OPENAI_API_KEY` (used by TruLens + GEPA reflection models).
-   - Harness Docker information (`HARBOR_*` and/or `SKILLBENCH_*` variables, depending on your selected harness).
-2. Install dependencies (TruLens, GEPA, python-dotenv, etc.):
-   ```bash
-   cd <repo-root>
-   python -m pip install -e .
-   ```
-3. Ensure Docker can pull/run the harness image you configured. The CLI mounts the repo root at `/workspace` by default, so both Harbor and SkillBench can read skills/datasets.
 
-## Run the loop
+```bash
+cp .env.example .env
+python -m pip install -e .
+```
+
+Then edit `.env` (see `.env.example`) with your OpenAI key and harness settings.
+
+## Quick start
+
+Run Harbor:
+
 ```bash
 skillgym \
   --harness harbor \
-  --skill-path skills/continuous-skill-loop/SKILL.md \
-  --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \
+  --skill-path skills/continuous-skill-loop/SKILL.md \
   --optimizer upskill
 ```
 
-SkillBench isolated run:
+Run SkillBench (isolated skill benchmark):
 
 ```bash
 skillgym \
@@ -34,21 +64,25 @@ skillgym \
   --optimizer upskill
 ```
 
-> Prefer the installed `skillgym …` command. If you bypass installation, `python -m cli …` still works as long as `PYTHONPATH=src`.
+Use `skillgym --help` for all flags.
 
-Artifacts land under `out/` by default:
-- `runs/<run_id>/summary.json`: aggregated metrics per skill version
-- `runs/<run_id>/task_runs.jsonl`: task-level telemetry emitted by the active harness
-- `runs/<run_id>/gpa_scores.jsonl`: TruLens GPA dimensions + judge rationales
-- `reports/candidate_diff.md`: baseline vs candidate comparison summary
-- `reports/promotion_decision.json`: gate decision artifact
-- `generated_skills/<skill_id>.md`: candidate SKILL.md ready for inspection
+## Output artifacts
 
-If `HARBOR_DOCKER_IMAGE` or `SKILLBENCH_DOCKER_IMAGE` is unset, the CLI falls back to the lightweight simulator for that harness (useful for local checks, not a replacement for real benchmark runs).
+Runs write to `out/`:
 
-## Extending the loop
-- Point either adapter at a different Docker command/mount layout with `HARBOR_*` or `SKILLBENCH_*` settings.
-- TruLens already uses the OpenAI provider—swap `TRULENS_JUDGE_MODEL`/`TRULENS_JUDGE_INSTRUCTIONS` in `.env` to try different judges.
-- The GEPA optimizer runs `optimize_anything` with heuristics backed by failure tags; tune `GEPA_*` env vars to control objective/background/max metric calls.
-- For multi-run observability, feed the JSON/JSONL artifacts into your preferred dashboard stack.
-- SkillBench-specific command/output contract lives in `integrations/skillbench/README.md`.
+- `out/runs/<run_id>/summary.json`
+- `out/runs/<run_id>/task_runs.jsonl`
+- `out/runs/<run_id>/gpa_scores.jsonl`
+- `out/reports/candidate_diff.md`
+- `out/reports/promotion_decision.json`
+- `out/generated_skills/<candidate_id>.md`
+
+## Contributing
+
+1. Make changes in `src/` (and integration docs if interfaces change).
+2. Validate syntax:
+   ```bash
+   python3 -m compileall src
+   ```
+3. Run one smoke command for the harness/optimizer you touched.
+4. Keep docs current (`README.md`, `integrations/`, and example skill docs).
