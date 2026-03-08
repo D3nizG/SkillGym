@@ -2,6 +2,20 @@
 
 SkillGym is an MVP CLI for continuous improvement of agent skills (`SKILL.md`) using benchmark execution + trace quality scoring.
 
+## Big picture (gym analogy)
+
+Treat your skill as an athlete:
+
+- The skill enters **SkillGym** to get fitter.
+- SkillGym runs structured **workouts** and measures performance.
+- The skill is rewritten, re-tested, and promoted only if it improves.
+
+Current workouts:
+
+- **SkillBench workout (isolation):** test and optimize the skill by itself.
+- **GPA workout (in-agent behavior):** use TruLens GPA to score how the agent used the skill (goal fulfillment, planning quality, adherence, efficiency, consistency).
+- **Extensible program:** add more harnesses, scorers, and optimizers later for a more complete "full body" optimization loop.
+
 ## Core loop
 
 1. Run benchmark tasks with a harness (`harbor` or `skillbench`).
@@ -28,6 +42,7 @@ SkillGym is an MVP CLI for continuous improvement of agent skills (`SKILL.md`) u
 - SkillBench (isolation harness): [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
 - SkillGym consumes SkillBench via Docker (`--harness skillbench`) and expects `task_runs.jsonl` output.
 - Full contract and expected fields: `integrations/skillbench/README.md`
+- TruLens GPA (behavior scoring): [pypi.org/project/trulens](https://pypi.org/project/trulens/)
 
 ## Prerequisites
 
@@ -73,6 +88,14 @@ skillgym \
 ```
 
 Use `skillgym --help` for all flags.
+
+## How to use SkillGym with SkillBench
+
+1. Start with your baseline `SKILL.md`.
+2. Run SkillGym with `--harness skillbench` to benchmark the skill in isolation.
+3. SkillGym scores traces with TruLens GPA and generates a candidate skill (`upskill` or `gepa`).
+4. SkillGym re-runs the same benchmark slice and compares baseline vs candidate.
+5. Keep the candidate only if promotion gates pass (`pass_rate`, catastrophic failures, GPA, token budget).
 
 ## Output artifacts
 
