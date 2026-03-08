@@ -1,47 +1,71 @@
+---
+name: continuous-skill-loop
+description: Run SkillGym benchmark loops with Harbor or SkillBench, score traces with TruLens GPA, generate candidates with Upskill or GEPA, and apply promotion gates.
+---
+
 # Continuous Skill Improvement Loop
 
-Use this skill to run a Harbor or SkillBench + TruLens loop that benchmarks a coding agent skill, scores trace quality, generates an Upskill/GEPA candidate, and produces a promotion recommendation.
+Use this skill to run the full SkillGym loop:
+1. benchmark baseline,
+2. score execution behavior (GPA),
+3. generate a candidate skill,
+4. re-benchmark and decide promote/reject.
 
 ## Prerequisites
-- Python 3.11+
-- Docker access to your selected harness image.
-- `.env` with `OPENAI_API_KEY`, harness image vars (`HARBOR_DOCKER_IMAGE` and/or `SKILLBENCH_DOCKER_IMAGE`), and optional GEPA overrides (copy `.env.example`).
-- Editable install of this repo (`python -m pip install -e .`).
-- Dataset registry JSON (defaults depend on harness and are mainly used for simulator fallback).
 
-## Run the loop
+- Python 3.11+
+- Docker (for local containerized demo mode)
+- `.env` from `.env.example`
+- `OPENAI_API_KEY` for real TruLens/Upskill execution
+- `python -m pip install -e .`
+
+## Recommended runs
+
+### Reproducible Docker demo
+
 ```bash
-skillgym \
-  --harness harbor \
-  --skill-path skills/continuous-skill-loop/SKILL.md \
-  --skill-name continuous-skill-loop \
-  --dataset-id sample-harbor \
-  --optimizer upskill \
-  --task-limit 3 \
-  --env-file .env  # optional; defaults to .env in repo root
+./scripts/run_e2e_skillbench_demo.sh
 ```
 
-> If you prefer not to install the package, you can substitute `skillgym` for `python -m cli`.
-> To run isolated benchmarks, switch to `--harness skillbench` and pass `--skillbench-registry benchmarks/sample_skillbench.json`.
+### Strict real SkillBench path
 
-Arguments:
-- `--skill-path`: baseline SKILL.md to evaluate.
-- `--harness`: `harbor` (default) or `skillbench`.
-- `--optimizer`: `upskill` (default) or `gepa` for candidate generation backend.
-- `--task-limit` / `--task-subset`: control task slices.
-- `--seed`: deterministic run seed.
-- `--output-dir`: where run artifacts + reports write (default `out/`).
+```bash
+./scripts/run_real_skillbench_e2e.sh /absolute/path/to/skillsbench/tasks
+```
 
-## Outputs
-- `out/runs/<run_id>/summary.json`: summary per skill version.
-- `out/runs/<run_id>/task_runs.jsonl`: task-level metrics.
-- `out/runs/<run_id>/gpa_scores.jsonl`: TruLens GPA diagnostics.
-- `out/reports/candidate_diff.md`: baseline vs candidate metrics + decision.
-- `out/generated_skills/<candidate_id>.md`: candidate SKILL.md ready for review.
+### Strict real Harbor path
 
-## Workflow Guardrails
-1. Always benchmark baseline skill first; never edit before collecting traces.
-2. Capture both successful and failing traces; GPA rationales feed the optimizer.
-3. Only promote candidates when pass rate, GPA, and catastrophic-failure gates pass.
-4. If traces highlight tooling or format regressions, update the skill manually and rerun.
-5. Archive artifacts per run to keep longitudinal history for GEPA search.
+```bash
+./scripts/run_real_harbor_e2e.sh /absolute/path/to/harbor/task-or-dataset
+```
+
+## Direct CLI usage
+
+```bash
+skillgym \
+  --harness skillbench \
+  --skillbench-path /absolute/path/to/skillsbench/tasks \
+  --dataset-id skillsbench-real \
+  --skill-path skills/e2e-poor-skill/SKILL.md \
+  --optimizer upskill \
+  --strict-real \
+  --task-limit 3 \
+  --env-file .env \
+  --output-dir out/my-run
+```
+
+## Output artifacts
+
+- `out/*/runs/<run_id>/summary.json`
+- `out/*/runs/<run_id>/task_runs.jsonl`
+- `out/*/runs/<run_id>/gpa_scores.jsonl`
+- `out/*/reports/candidate_diff.md`
+- `out/*/reports/promotion_decision.json`
+- `out/*/generated_skills/*.md`
+
+## Guardrails
+
+1. Never promote without baseline-vs-candidate comparison on the same task slice.
+2. Use strict mode when you need real integration only (`--strict-real`).
+3. Block promotion if catastrophic failures increase.
+4. Prefer concise skill edits that improve plan quality and execution efficiency.

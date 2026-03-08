@@ -148,3 +148,4 @@ skillgym \
 - `src/scoring/trulens_adapter.py` — GPA scoring
 - `src/optimization/` — optimizer adapters
 - `src/promotion/decider.py` — promotion gates
+- `skills/README.md` — skill assets and how they map to demo/real runs
