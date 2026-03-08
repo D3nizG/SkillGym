@@ -1,13 +1,13 @@
 [project]
-name = "skill-optimizer"
+name = "skillgym"
 version = "0.1.0"
-description = "MVP CLI for continuous skill improvement loop integrating Harbor, TruLens GPA, and optimizer adapters."
+description = "SkillGym CLI for continuous skill improvement loop integrating Harbor, TruLens GPA, and optimizer adapters."
 authors = [{ name = "Codex" }]
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-skill-optimizer = "skill_optimizer.cli:main"
+skillgym = "skillgym.cli:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

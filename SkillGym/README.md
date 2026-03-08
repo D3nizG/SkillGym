@@ -1,12 +1,12 @@
-# Skill Optimizer MVP
+# SkillGym
 
-Simple CLI that simulates the Harbor + TruLens + Optimizer loop described in the design doc. It runs a baseline skill through the Harbor runner, scores traces with a TruLens-inspired GPA evaluator, proposes a new skill candidate (Upskill or GEPA), reruns the benchmark, and applies promotion gates.
+SkillGym is a CLI that simulates the Harbor + TruLens + optimizer loop described in the design doc. It runs a baseline skill through the Harbor runner, scores traces with a TruLens-inspired GPA evaluator, proposes a new skill candidate (Upskill or GEPA), reruns the benchmark, and applies promotion gates.
 
 ## Quickstart
 ```bash
 cd /Users/Thomas_1/Documents/Playground/SkillGym
 python -m pip install -e .
-python -m skill_optimizer.cli \
+python -m skillgym.cli \
   --skill-path skills/continuous-skill-loop/SKILL.md \
   --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \

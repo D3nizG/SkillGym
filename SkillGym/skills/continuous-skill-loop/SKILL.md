@@ -4,7 +4,7 @@ Use this skill to run the Harbor + TruLens driven loop that benchmarks a coding 
 
 ## Prerequisites
 - Python 3.11+
-- Repo root with the `skill-optimizer` package installed (editable install recommended)
+- Repo root with the `SkillGym` package installed (editable install recommended)
 - Harbor dataset registry JSON (defaults to `benchmarks/sample_tasks.json`)
 
 ## Setup
@@ -15,7 +15,7 @@ python -m pip install -e .
 
 ## Run the loop
 ```bash
-python -m skill_optimizer.cli \
+python -m skillgym.cli \
   --skill-path skills/continuous-skill-loop/SKILL.md \
   --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \
