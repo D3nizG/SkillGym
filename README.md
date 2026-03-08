@@ -27,6 +27,24 @@ flowchart LR
     J -->|No| L["Reject or manual review"]
 ```
 
+## GPA picture
+
+```mermaid
+flowchart TD
+    T["Normalized task trace"] --> G["TruLens GPA evaluation"]
+    G --> D1["Goal fulfillment"]
+    G --> D2["Plan quality"]
+    G --> D3["Plan adherence"]
+    G --> D4["Execution efficiency"]
+    G --> D5["Logical consistency"]
+    D1 --> A["Aggregate GPA"]
+    D2 --> A
+    D3 --> A
+    D4 --> A
+    D5 --> A
+    A --> O["Promotion gates + failure tags"]
+```
+
 ## Step-by-step (fastest path)
 
 ### 1) Prerequisites
