@@ -1,0 +1,31 @@
+{
+  "datasets": [
+    {
+      "id": "sample-harbor",
+      "description": "Lightweight Harbor-style benchmark for skill optimizer MVP",
+      "tasks": [
+        {
+          "id": "task-doc-architecture",
+          "goal": "Draft architecture summary",
+          "difficulty": 0.4,
+          "context": "Summarize Harbor + TruLens integration.",
+          "success_template": "Produced Harbor/TruLens summary"
+        },
+        {
+          "id": "task-trace-diagnosis",
+          "goal": "Diagnose trace failure",
+          "difficulty": 0.55,
+          "context": "Identify redundant actions in benchmark run.",
+          "success_template": "Highlighted redundant actions and fixes"
+        },
+        {
+          "id": "task-optimizer-brief",
+          "goal": "Write optimizer brief",
+          "difficulty": 0.6,
+          "context": "Compare Upskill vs GEPA outputs.",
+          "success_template": "Optimizer trade-off table"
+        }
+      ]
+    }
+  ]
+}
