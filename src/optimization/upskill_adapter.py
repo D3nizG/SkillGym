@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import Dict, List
 
-from ..models import OptimizationContext, SkillVersion
+from models import OptimizationContext, SkillVersion
 
 
 @dataclass

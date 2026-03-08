@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
-from ..models import BenchmarkRun, CandidateComparison, GPAScore, SkillVersion, TaskRun
+from models import BenchmarkRun, CandidateComparison, GPAScore, SkillVersion, TaskRun
 
 
 class InMemoryRepository:

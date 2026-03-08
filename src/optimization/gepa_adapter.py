@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from ..models import OptimizationContext
+from models import OptimizationContext
 
 
 @dataclass

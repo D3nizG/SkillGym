@@ -15,7 +15,7 @@ python -m pip install -e .
 
 ## Run the loop
 ```bash
-python -m skillgym.cli \
+python -m cli \
   --skill-path skills/continuous-skill-loop/SKILL.md \
   --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \

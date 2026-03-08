@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from ..adapters.harbor import HarborRunner
-from ..models import (
+from adapters.harbor import HarborRunner
+from models import (
     BenchmarkRun,
     GPAScore,
     NormalizedTrace,
@@ -16,13 +16,13 @@ from ..models import (
     SkillVersion,
     TaskRun,
 )
-from ..normalization.trace_normalizer import TraceNormalizer
-from ..optimization.gepa_adapter import GEPAOptimizer
-from ..optimization.upskill_adapter import UpskillOptimizer
-from ..promotion.decider import PromotionDecider
-from ..scoring.trulens_adapter import TruLensGPAEvaluator
-from ..storage.repository import InMemoryRepository
-from ..utils.io import write_json, write_jsonl
+from normalization.trace_normalizer import TraceNormalizer
+from optimization.gepa_adapter import GEPAOptimizer
+from optimization.upskill_adapter import UpskillOptimizer
+from promotion.decider import PromotionDecider
+from scoring.trulens_adapter import TruLensGPAEvaluator
+from storage.repository import InMemoryRepository
+from utils.io import write_json, write_jsonl
 
 
 @dataclass

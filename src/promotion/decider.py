@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict
 
-from ..models import CandidateComparison
+from models import CandidateComparison
 
 
 @dataclass

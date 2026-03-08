@@ -3,7 +3,7 @@ from __future__ import annotations
 from statistics import mean
 from typing import Dict, List, Tuple
 
-from ..models import GPAScore, NormalizedTrace
+from models import GPAScore, NormalizedTrace
 
 
 class TruLensGPAEvaluator:

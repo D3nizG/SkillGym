@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Tuple
 
-from ..models import NormalizedTrace
-from ..utils.io import load_json, write_json
+from models import NormalizedTrace
+from utils.io import load_json, write_json
 
 
 class TraceNormalizer:

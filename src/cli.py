@@ -4,19 +4,19 @@ import argparse
 from pathlib import Path
 from typing import Any, Dict
 
-from .adapters.harbor import HarborRunner
-from .normalization.trace_normalizer import TraceNormalizer
-from .orchestrator.pipeline import LoopConfig, SkillImprovementLoop
-from .promotion.decider import PromotionDecider
-from .scoring.trulens_adapter import TruLensGPAEvaluator
-from .storage.repository import InMemoryRepository
+from adapters.harbor import HarborRunner
+from normalization.trace_normalizer import TraceNormalizer
+from orchestrator.pipeline import LoopConfig, SkillImprovementLoop
+from promotion.decider import PromotionDecider
+from scoring.trulens_adapter import TruLensGPAEvaluator
+from storage.repository import InMemoryRepository
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Continuous skill improvement MVP CLI",
     )
-    default_root = Path(__file__).resolve().parents[2]
+    default_root = Path(__file__).resolve().parents[1]
     parser.add_argument(
         "--skill-path",
         required=True,

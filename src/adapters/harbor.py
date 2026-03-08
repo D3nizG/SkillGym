@@ -6,8 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from ..models import BenchmarkRun, SkillVersion, TaskRun
-from ..utils.io import ensure_dir
+from models import BenchmarkRun, SkillVersion, TaskRun
+from utils.io import ensure_dir
 
 
 class HarborRunner:
