@@ -1,142 +1,95 @@
 # SkillGym
 
-SkillGym is an MVP CLI for continuous improvement of agent skills (`SKILL.md`) using benchmark execution + trace quality scoring.
+SkillGym improves `SKILL.md` files with a benchmark loop:
 
-## Big picture (gym analogy)
+1. Run tasks with a harness (`skillbench` or `harbor`)
+2. Score behavior (TruLens GPA dimensions)
+3. Generate candidate skill text (`upskill` or `gepa`)
+4. Re-run and promote only if gates pass
 
-Treat your skill as an athlete:
+Think of it as: your skill goes to the gym, does workouts, and only graduates if it gets fitter.
 
-- The skill enters **SkillGym** to get fitter.
-- SkillGym runs structured **workouts** and measures performance.
-- The skill is rewritten, re-tested, and promoted only if it improves.
+## System picture
 
-Current workouts:
+```mermaid
+flowchart LR
+    A["Baseline SKILL.md"] --> B["SkillGym CLI"]
+    B --> C["Harness workout<br/>(SkillBench or Harbor)"]
+    C --> D["Task traces + outcomes"]
+    D --> E["TruLens GPA scoring"]
+    E --> F["Failure tags + metrics"]
+    F --> G["Optimizer<br/>(Upskill or GEPA)"]
+    G --> H["Candidate SKILL.md"]
+    H --> C
+    C --> I["Baseline vs Candidate comparison"]
+    I --> J{"Promotion gates pass?"}
+    J -->|Yes| K["Promoted skill"]
+    J -->|No| L["Reject or manual review"]
+```
 
-- **SkillBench workout (isolation):** test and optimize the skill by itself.
-- **GPA workout (in-agent behavior):** use TruLens GPA to score how the agent used the skill (goal fulfillment, planning quality, adherence, efficiency, consistency).
-- **Extensible program:** add more harnesses, scorers, and optimizers later for a more complete "full body" optimization loop.
+## Step-by-step (fastest path)
 
-## Core loop
-
-1. Run benchmark tasks with a harness (`harbor` or `skillbench`).
-2. Normalize traces and score behavior with TruLens GPA dimensions.
-3. Generate a candidate skill with an optimizer (`upskill` or `gepa`).
-4. Re-run the same benchmark slice and apply promotion gates.
-
-## Project structure
-
-- `src/cli.py` — CLI entrypoint and wiring.
-- `src/orchestrator/pipeline.py` — end-to-end baseline/candidate workflow.
-- `src/adapters/` — harness backends (`harbor.py`, `skillbench.py`).
-- `src/normalization/trace_normalizer.py` — raw trace -> normalized trace schema.
-- `src/scoring/trulens_adapter.py` — TruLens-based GPA scoring.
-- `src/optimization/` — optimizer adapters (`upskill_adapter.py`, `gepa_adapter.py`).
-- `src/promotion/decider.py` — promotion gate policy.
-- `src/storage/repository.py` — in-memory run/skill bookkeeping.
-- `benchmarks/` — sample dataset registries.
-- `integrations/skillbench/` — SkillBench interface contract and schema.
-- `skills/` — example skills used as baseline inputs.
-
-## External integrations
-
-- SkillBench (isolation harness): [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
-- SkillGym consumes SkillBench via Docker (`--harness skillbench`) and expects `task_runs.jsonl` output.
-- Full contract and expected fields: `integrations/skillbench/README.md`
-- TruLens GPA (behavior scoring): [pypi.org/project/trulens](https://pypi.org/project/trulens/)
-
-## Prerequisites
+### 1) Prerequisites
 
 - Python `>=3.11`
-- Docker (for real harness execution)
-- OpenAI API key (`OPENAI_API_KEY`)
-- At least one harness image:
-  - `HARBOR_DOCKER_IMAGE`, or
-  - `SKILLBENCH_DOCKER_IMAGE`
+- Docker
 
-## Setup
+### 2) Install
 
 ```bash
-cp .env.example .env
+git clone https://github.com/zetomatoz/SkillGym.git
+cd SkillGym
 python -m pip install -e .
+cp .env.example .env
 ```
 
-Then edit `.env` (see `.env.example`) with your OpenAI key and harness settings.
+For local demo runs, `OPENAI_API_KEY` is optional (SkillGym will use heuristic GPA scoring).
 
-For SkillBench, set `SKILLBENCH_DOCKER_IMAGE` to an image built from or published by [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench).
-
-## Quick start
-
-Run Harbor:
-
-```bash
-skillgym \
-  --harness harbor \
-  --dataset-id sample-harbor \
-  --skill-path skills/continuous-skill-loop/SKILL.md \
-  --optimizer upskill
-```
-
-Run SkillBench (isolated skill benchmark):
-
-```bash
-skillgym \
-  --harness skillbench \
-  --skillbench-registry benchmarks/sample_skillbench.json \
-  --dataset-id sample-skillbench \
-  --skill-path skills/continuous-skill-loop/SKILL.md \
-  --optimizer upskill
-```
-
-Use `skillgym --help` for all flags.
-
-## How to use SkillGym with SkillBench
-
-1. Start with your baseline `SKILL.md`.
-2. Run SkillGym with `--harness skillbench` to benchmark the skill in isolation.
-3. SkillGym scores traces with TruLens GPA and generates a candidate skill (`upskill` or `gepa`).
-4. SkillGym re-runs the same benchmark slice and compares baseline vs candidate.
-5. Keep the candidate only if promotion gates pass (`pass_rate`, catastrophic failures, GPA, token budget).
-
-## Reproducible Docker E2E demo
-
-This repo includes a deterministic SkillBench-compatible Docker harness for local demo runs.
-It works without `OPENAI_API_KEY` (SkillGym falls back to heuristic GPA scoring).
-
-Run:
+### 3) Run the reproducible Docker E2E demo
 
 ```bash
 ./scripts/run_e2e_skillbench_demo.sh
 ```
 
-What it does:
+This command:
 
-1. Builds `integrations/skillbench/mock` as a local Docker image.
-2. Runs SkillGym on `skills/e2e-poor-skill/SKILL.md` with `--harness skillbench`.
-3. Generates a candidate skill via `upskill`, re-runs the benchmark, and writes a promotion report.
+- builds the local SkillBench-compatible Docker image in `integrations/skillbench/mock/`
+- evaluates a weak baseline skill in `skills/e2e-poor-skill/SKILL.md`
+- generates a candidate skill and compares baseline vs candidate
 
-Key demo assets:
+### 4) Inspect outputs
 
-- Baseline weak skill: `skills/e2e-poor-skill/SKILL.md`
-- Demo dataset: `benchmarks/e2e_skillbench.json`
-- Docker harness implementation: `integrations/skillbench/mock/skillbench.py`
+- Report: `out/e2e-skillbench/reports/candidate_diff.md`
+- Decision: `out/e2e-skillbench/reports/promotion_decision.json`
+- Candidate skill: `out/e2e-skillbench/generated_skills/`
 
-## Output artifacts
+## Run SkillGym on your own skill
 
-Runs write to `out/`:
+Replace `--skill-path` with your own `SKILL.md`:
 
-- `out/runs/<run_id>/summary.json`
-- `out/runs/<run_id>/task_runs.jsonl`
-- `out/runs/<run_id>/gpa_scores.jsonl`
-- `out/reports/candidate_diff.md`
-- `out/reports/promotion_decision.json`
-- `out/generated_skills/<candidate_id>.md`
+```bash
+skillgym \
+  --harness skillbench \
+  --skillbench-registry benchmarks/e2e_skillbench.json \
+  --dataset-id e2e-skillbench \
+  --skill-path /path/to/your/SKILL.md \
+  --optimizer upskill \
+  --output-dir out/my-run
+```
 
-## Contributing
+## Use real SkillBench / Harbor containers
 
-1. Make changes in `src/` (and integration docs if interfaces change).
-2. Validate syntax:
-   ```bash
-   python3 -m compileall src
-   ```
-3. Run one smoke command for the harness/optimizer you touched.
-4. Keep docs current (`README.md`, `integrations/`, and example skill docs).
+- SkillBench project: [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
+- Set container images in `.env`:
+  - `SKILLBENCH_DOCKER_IMAGE=...`
+  - `HARBOR_DOCKER_IMAGE=...`
+- SkillBench contract details: `integrations/skillbench/README.md`
+
+## Architecture (quick map)
+
+- `src/cli.py` — CLI entrypoint and wiring
+- `src/orchestrator/pipeline.py` — baseline/candidate loop
+- `src/adapters/` — harness adapters (`harbor.py`, `skillbench.py`)
+- `src/scoring/trulens_adapter.py` — GPA scoring
+- `src/optimization/` — optimizer adapters
+- `src/promotion/decider.py` — promotion gates
