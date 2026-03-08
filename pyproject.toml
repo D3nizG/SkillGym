@@ -1,16 +1,23 @@
 [project]
 name = "skillgym"
-version = "0.1.0"
+version = "0.2.0"
 description = "SkillGym CLI for continuous skill improvement loop integrating Harbor, TruLens GPA, and optimizer adapters."
 authors = [{ name = "Codex" }]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "python-dotenv>=1.0",
+  "trulens>=2.7",
+  "trulens-providers-openai>=2.7",
+  "openai>=1.0.0",
+  "gepa>=0.1.0",
+]
 
 [project.scripts]
 skillgym = "cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+py-modules = ["cli", "models", "settings"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

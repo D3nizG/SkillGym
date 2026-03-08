@@ -25,3 +25,14 @@ def write_jsonl(path: Path, rows: Iterable[Any]) -> None:
 
 def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_jsonl(path: Path) -> list[Any]:
+    rows = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows

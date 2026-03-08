@@ -9,6 +9,7 @@ from normalization.trace_normalizer import TraceNormalizer
 from orchestrator.pipeline import LoopConfig, SkillImprovementLoop
 from promotion.decider import PromotionDecider
 from scoring.trulens_adapter import TruLensGPAEvaluator
+from settings import load_settings
 from storage.repository import InMemoryRepository
 
 
@@ -73,6 +74,10 @@ def parse_args() -> argparse.Namespace:
         default=str(default_root / "out"),
         help="Directory for run artifacts",
     )
+    parser.add_argument(
+        "--env-file",
+        help="Path to the .env file containing Harbor/OpenAI/GEPA secrets (defaults to .env in repo root).",
+    )
     return parser.parse_args()
 
 
@@ -95,17 +100,32 @@ def main() -> None:
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    repo_root = Path(__file__).resolve().parents[1]
+    env_path = Path(args.env_file).expanduser().resolve() if args.env_file else None
+    settings = load_settings(env_path)
+
     repository = InMemoryRepository()
     harbor_runner = HarborRunner(
         dataset_registry=Path(args.dataset_registry).expanduser().resolve(),
         artifacts_root=output_dir / "runs",
+        workspace_root=repo_root,
+        docker_image=settings.harbor.docker_image,
+        docker_command=settings.harbor.docker_command,
+        workspace_mount=settings.harbor.workspace_mount,
+        results_mount=settings.harbor.results_mount,
+        extra_env=settings.harbor.extra_env,
     )
     loop = SkillImprovementLoop(
         repository=repository,
         harbor_runner=harbor_runner,
         trace_normalizer=TraceNormalizer(),
-        gpa_evaluator=TruLensGPAEvaluator(),
+        gpa_evaluator=TruLensGPAEvaluator(
+            judge_model=settings.trulens.judge_model,
+            api_key=settings.trulens.openai_api_key,
+            instructions=settings.trulens.judge_instructions,
+        ),
         promotion_decider=PromotionDecider(),
+        gepa_settings=settings.gepa,
     )
 
     config = LoopConfig(

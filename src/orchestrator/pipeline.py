@@ -23,6 +23,7 @@ from promotion.decider import PromotionDecider
 from scoring.trulens_adapter import TruLensGPAEvaluator
 from storage.repository import InMemoryRepository
 from utils.io import write_json, write_jsonl
+from settings import GepaSettings
 
 
 @dataclass
@@ -54,12 +55,14 @@ class SkillImprovementLoop:
         trace_normalizer: TraceNormalizer,
         gpa_evaluator: TruLensGPAEvaluator,
         promotion_decider: PromotionDecider,
+        gepa_settings: GepaSettings | None = None,
     ) -> None:
         self.repository = repository
         self.harbor_runner = harbor_runner
         self.trace_normalizer = trace_normalizer
         self.gpa_evaluator = gpa_evaluator
         self.promotion_decider = promotion_decider
+        self.gepa_settings = gepa_settings
 
     # ------------------------------------------------------------------
     def run(self, config: LoopConfig) -> Dict[str, Any]:
@@ -121,11 +124,13 @@ class SkillImprovementLoop:
     ) -> RunArtifacts:
         runtime_config = dict(config.runtime_config)
         runtime_config.update({"agent_id": config.agent_id, "model_id": config.model_id})
+        skill_material_path = self._materialize_skill(config, skill_version)
         run, task_runs = self.harbor_runner.run_benchmark(
             dataset_id=config.dataset_id,
             agent_id=config.agent_id,
             model_id=config.model_id,
             skill_version=skill_version,
+            skill_file=skill_material_path,
             runtime_config=runtime_config,
         )
         normalized_traces: Dict[str, NormalizedTrace] = {}
@@ -220,7 +225,11 @@ class SkillImprovementLoop:
         if normalized == "upskill":
             return UpskillOptimizer()
         if normalized == "gepa":
-            return GEPAOptimizer()
+            if not self.gepa_settings:
+                raise ValueError(
+                    "GEPA settings missing. Provide GEPA_* variables in your .env file."
+                )
+            return GEPAOptimizer(settings=self.gepa_settings)
         raise ValueError(f"Unsupported optimizer '{name}'.")
 
     def _register_skill(
@@ -256,6 +265,17 @@ class SkillImprovementLoop:
         candidate_path = candidates_dir / f"{skill_version.id}.md"
         candidate_path.write_text(skill_version.content, encoding="utf-8")
         return str(candidate_path)
+
+    def _materialize_skill(
+        self,
+        config: LoopConfig,
+        skill_version: SkillVersion,
+    ) -> Path:
+        skills_cache = config.output_dir / "skills_cache"
+        skills_cache.mkdir(parents=True, exist_ok=True)
+        cache_path = skills_cache / f"{skill_version.id}.md"
+        cache_path.write_text(skill_version.content, encoding="utf-8")
+        return cache_path
 
     def _write_candidate_diff(
         self,
