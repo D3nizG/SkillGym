@@ -45,6 +45,10 @@ flowchart TD
     A --> O["Promotion gates + failure tags"]
 ```
 
+Static PNG version:
+
+![GPA picture](gpa.png)
+
 ## Step-by-step (fastest path)
 
 ### 1) Prerequisites
