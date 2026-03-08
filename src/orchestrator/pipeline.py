@@ -5,9 +5,7 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
-
-from adapters.harbor import HarborRunner
+from typing import Any, Dict, List, Protocol, Tuple
 from models import (
     BenchmarkRun,
     GPAScore,
@@ -47,18 +45,31 @@ class RunArtifacts:
     failure_taxonomy: Dict[str, int]
 
 
+class BenchmarkRunnerProtocol(Protocol):
+    def run_benchmark(
+        self,
+        dataset_id: str,
+        agent_id: str,
+        model_id: str,
+        skill_version: SkillVersion,
+        skill_file: Path,
+        runtime_config: Dict[str, Any],
+    ) -> Tuple[BenchmarkRun, List[TaskRun]]:
+        ...
+
+
 class SkillImprovementLoop:
     def __init__(
         self,
         repository: InMemoryRepository,
-        harbor_runner: HarborRunner,
+        benchmark_runner: BenchmarkRunnerProtocol,
         trace_normalizer: TraceNormalizer,
         gpa_evaluator: TruLensGPAEvaluator,
         promotion_decider: PromotionDecider,
         gepa_settings: GepaSettings | None = None,
     ) -> None:
         self.repository = repository
-        self.harbor_runner = harbor_runner
+        self.benchmark_runner = benchmark_runner
         self.trace_normalizer = trace_normalizer
         self.gpa_evaluator = gpa_evaluator
         self.promotion_decider = promotion_decider
@@ -125,7 +136,7 @@ class SkillImprovementLoop:
         runtime_config = dict(config.runtime_config)
         runtime_config.update({"agent_id": config.agent_id, "model_id": config.model_id})
         skill_material_path = self._materialize_skill(config, skill_version)
-        run, task_runs = self.harbor_runner.run_benchmark(
+        run, task_runs = self.benchmark_runner.run_benchmark(
             dataset_id=config.dataset_id,
             agent_id=config.agent_id,
             model_id=config.model_id,

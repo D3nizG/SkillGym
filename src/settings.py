@@ -22,6 +22,19 @@ class HarborSettings:
 
 
 @dataclass
+class SkillBenchSettings:
+    docker_image: Optional[str]
+    docker_command: str = "docker"
+    workspace_mount: str = "/workspace"
+    results_mount: str = "/skillbench/artifacts"
+    extra_env: Dict[str, str] = field(default_factory=dict)
+
+    @property
+    def simulation_mode(self) -> bool:
+        return not bool(self.docker_image)
+
+
+@dataclass
 class TruLensSettings:
     openai_api_key: Optional[str]
     judge_model: str = "gpt-4o-mini"
@@ -32,7 +45,7 @@ class TruLensSettings:
 class GepaSettings:
     reflection_model: str = "openai/gpt-4o-mini"
     objective: str = (
-        "Evolve the SkillGym instructions so Harbor benchmarks pass more tasks "
+        "Evolve the SkillGym instructions so benchmark runs pass more tasks "
         "while TruLens GPA improves across all dimensions."
     )
     max_metric_calls: int = 8
@@ -41,6 +54,7 @@ class GepaSettings:
 @dataclass
 class SkillGymSettings:
     harbor: HarborSettings
+    skillbench: SkillBenchSettings
     trulens: TruLensSettings
     gepa: GepaSettings
 
@@ -71,6 +85,13 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
         results_mount=os.getenv("HARBOR_RESULTS_MOUNT", "/harbor/artifacts"),
         extra_env=_parse_extra_env(os.getenv("HARBOR_EXTRA_ENV")),
     )
+    skillbench = SkillBenchSettings(
+        docker_image=os.getenv("SKILLBENCH_DOCKER_IMAGE"),
+        docker_command=os.getenv("SKILLBENCH_DOCKER_CMD", "docker"),
+        workspace_mount=os.getenv("SKILLBENCH_WORKSPACE_MOUNT", "/workspace"),
+        results_mount=os.getenv("SKILLBENCH_RESULTS_MOUNT", "/skillbench/artifacts"),
+        extra_env=_parse_extra_env(os.getenv("SKILLBENCH_EXTRA_ENV")),
+    )
     trulens = TruLensSettings(
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         judge_model=os.getenv("TRULENS_JUDGE_MODEL", "gpt-4o-mini"),
@@ -81,10 +102,15 @@ def load_settings(env_file: Path | None = None) -> SkillGymSettings:
         objective=os.getenv(
             "GEPA_OBJECTIVE",
             (
-                "Evolve the SkillGym instructions using Harbor traces, "
+                "Evolve the SkillGym instructions using benchmark traces, "
                 "TruLens rationales, and optimization telemetry."
             ),
         ),
         max_metric_calls=int(os.getenv("GEPA_MAX_METRIC_CALLS", "8")),
     )
-    return SkillGymSettings(harbor=harbor, trulens=trulens, gepa=gepa)
+    return SkillGymSettings(
+        harbor=harbor,
+        skillbench=skillbench,
+        trulens=trulens,
+        gepa=gepa,
+    )

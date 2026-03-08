@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from adapters.harbor import HarborRunner
+from adapters.skillbench import SkillBenchRunner
 from normalization.trace_normalizer import TraceNormalizer
 from orchestrator.pipeline import LoopConfig, SkillImprovementLoop
 from promotion.decider import PromotionDecider
@@ -29,13 +30,23 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dataset-id",
-        default="sample-harbor",
-        help="Dataset identifier from the registry",
+        help="Dataset identifier from the registry (defaults depend on harness).",
     )
     parser.add_argument(
         "--dataset-registry",
         default=str(default_root / "benchmarks" / "sample_tasks.json"),
         help="Path to Harbor dataset registry JSON",
+    )
+    parser.add_argument(
+        "--skillbench-registry",
+        default=str(default_root / "benchmarks" / "sample_skillbench.json"),
+        help="Path to SkillBench dataset registry JSON",
+    )
+    parser.add_argument(
+        "--harness",
+        default="harbor",
+        choices=["harbor", "skillbench"],
+        help="Benchmark harness backend to execute.",
     )
     parser.add_argument(
         "--agent-id",
@@ -103,21 +114,36 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     env_path = Path(args.env_file).expanduser().resolve() if args.env_file else None
     settings = load_settings(env_path)
+    dataset_id = args.dataset_id or (
+        "sample-skillbench" if args.harness == "skillbench" else "sample-harbor"
+    )
 
     repository = InMemoryRepository()
-    harbor_runner = HarborRunner(
-        dataset_registry=Path(args.dataset_registry).expanduser().resolve(),
-        artifacts_root=output_dir / "runs",
-        workspace_root=repo_root,
-        docker_image=settings.harbor.docker_image,
-        docker_command=settings.harbor.docker_command,
-        workspace_mount=settings.harbor.workspace_mount,
-        results_mount=settings.harbor.results_mount,
-        extra_env=settings.harbor.extra_env,
-    )
+    if args.harness == "skillbench":
+        benchmark_runner = SkillBenchRunner(
+            dataset_registry=Path(args.skillbench_registry).expanduser().resolve(),
+            artifacts_root=output_dir / "runs",
+            workspace_root=repo_root,
+            docker_image=settings.skillbench.docker_image,
+            docker_command=settings.skillbench.docker_command,
+            workspace_mount=settings.skillbench.workspace_mount,
+            results_mount=settings.skillbench.results_mount,
+            extra_env=settings.skillbench.extra_env,
+        )
+    else:
+        benchmark_runner = HarborRunner(
+            dataset_registry=Path(args.dataset_registry).expanduser().resolve(),
+            artifacts_root=output_dir / "runs",
+            workspace_root=repo_root,
+            docker_image=settings.harbor.docker_image,
+            docker_command=settings.harbor.docker_command,
+            workspace_mount=settings.harbor.workspace_mount,
+            results_mount=settings.harbor.results_mount,
+            extra_env=settings.harbor.extra_env,
+        )
     loop = SkillImprovementLoop(
         repository=repository,
-        harbor_runner=harbor_runner,
+        benchmark_runner=benchmark_runner,
         trace_normalizer=TraceNormalizer(),
         gpa_evaluator=TruLensGPAEvaluator(
             judge_model=settings.trulens.judge_model,
@@ -129,7 +155,7 @@ def main() -> None:
     )
 
     config = LoopConfig(
-        dataset_id=args.dataset_id,
+        dataset_id=dataset_id,
         agent_id=args.agent_id,
         model_id=args.model_id,
         runtime_config=build_runtime_config(args),

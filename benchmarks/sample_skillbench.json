@@ -1,0 +1,31 @@
+{
+  "datasets": [
+    {
+      "id": "sample-skillbench",
+      "description": "SkillBench-style isolated benchmark slice for skill optimization",
+      "tasks": [
+        {
+          "id": "sb-plan-sanity",
+          "goal": "Create a compact, verifiable plan",
+          "difficulty": 0.45,
+          "context": "Task requires plan-first execution under strict format constraints.",
+          "success_template": "Returned structured plan and validation checks"
+        },
+        {
+          "id": "sb-tool-choice",
+          "goal": "Choose the minimum viable tool path",
+          "difficulty": 0.58,
+          "context": "Task penalizes redundant calls and rewards concise tool use.",
+          "success_template": "Completed task with minimal tool calls"
+        },
+        {
+          "id": "sb-output-contract",
+          "goal": "Produce contract-compliant final output",
+          "difficulty": 0.62,
+          "context": "Task fails when output schema is incomplete or incorrectly ordered.",
+          "success_template": "Produced schema-compliant final output"
+        }
+      ]
+    }
+  ]
+}

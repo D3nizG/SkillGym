@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SkillBench task_runs row",
+  "type": "object",
+  "required": ["task_id"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "task_run_id": { "type": "string" },
+    "benchmark_run_id": { "type": "string" },
+    "pass_fail": { "type": "boolean" },
+    "passed": { "type": "boolean" },
+    "latency_s": { "type": "number" },
+    "tokens_in": { "type": "integer" },
+    "tokens_out": { "type": "integer" },
+    "cost_usd": { "type": "number" },
+    "raw_trace_uri": { "type": "string" },
+    "raw_trace_path": { "type": "string" },
+    "input_spec": { "type": "object" },
+    "final_output": { "type": "object" }
+  },
+  "additionalProperties": true
+}
