@@ -2,6 +2,8 @@
 
 This directory documents the SkillGym <-> SkillBench integration used for isolated skill optimization runs.
 
+Official SkillBench project: [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
+
 ## How SkillGym invokes SkillBench
 
 When `--harness skillbench` is set, SkillGym executes a Docker command equivalent to:
@@ -16,6 +18,7 @@ skillbench run \
 ```
 
 The exact image/command/mounts come from `.env` (`SKILLBENCH_*` variables).
+Set `SKILLBENCH_DOCKER_IMAGE` to an image built from or published by the SkillBench project.
 
 ## Output contract expected by SkillGym
 

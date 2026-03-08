@@ -23,6 +23,12 @@ SkillGym is an MVP CLI for continuous improvement of agent skills (`SKILL.md`) u
 - `integrations/skillbench/` — SkillBench interface contract and schema.
 - `skills/` — example skills used as baseline inputs.
 
+## External integrations
+
+- SkillBench (isolation harness): [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench)
+- SkillGym consumes SkillBench via Docker (`--harness skillbench`) and expects `task_runs.jsonl` output.
+- Full contract and expected fields: `integrations/skillbench/README.md`
+
 ## Prerequisites
 
 - Python `>=3.11`
@@ -40,6 +46,8 @@ python -m pip install -e .
 ```
 
 Then edit `.env` (see `.env.example`) with your OpenAI key and harness settings.
+
+For SkillBench, set `SKILLBENCH_DOCKER_IMAGE` to an image built from or published by [benchflow-ai/skillsbench](https://github.com/benchflow-ai/skillsbench).
 
 ## Quick start
 
