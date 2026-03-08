@@ -15,13 +15,15 @@ python -m pip install -e .
 
 ## Run the loop
 ```bash
-python -m cli \
+skillgym \
   --skill-path skills/continuous-skill-loop/SKILL.md \
   --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \
   --optimizer upskill \
   --task-limit 3
 ```
+
+> If you prefer not to install the package, you can substitute `skillgym` for `python -m cli`.
 
 Arguments:
 - `--skill-path`: baseline SKILL.md to evaluate.

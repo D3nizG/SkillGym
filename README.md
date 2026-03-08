@@ -6,12 +6,14 @@ SkillGym is a CLI that simulates the Harbor + TruLens + optimizer loop described
 ```bash
 cd /Users/Thomas_1/Documents/Playground
 python -m pip install -e .
-python -m cli \
+skillgym \
   --skill-path skills/continuous-skill-loop/SKILL.md \
   --skill-name continuous-skill-loop \
   --dataset-id sample-harbor \
   --optimizer upskill
 ```
+
+> Prefer the installed command `skillgym …`. For ad‑hoc runs without installation you can still use `python -m cli …`.
 
 Key outputs land under `out/` by default:
 - `runs/<run_id>/summary.json`: per-skill Harbor metrics
